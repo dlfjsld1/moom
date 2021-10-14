@@ -2,15 +2,31 @@ const socket = io();//socket.io를 사용하면 port나 ws를 쓸 필요가 없�
 
 const welcome = document.getElementById("welcome");
 const form = welcome.querySelector("form");
+const room = document.getElementById("room");
 
-function backendDone(msg) {
-    console.log(`The backend days : ${msg}`);
+room.hidden = true;//해당 부분을 숨긴다
+
+let roomName = '';
+
+function addMessage(message) {
+    const ul = room.querySelector("ul");
+    const li = document.createElement("li");
+    li.innerText = message;
+    ul.appendChild(li);
+}
+
+function showRoom() {
+    welcome.hidden = true;
+    room.hidden = false;
+    const h3 = room.querySelector("h3");
+    h3.innerText = `Room ${roomName}`;
 }
 
 function handleRoomSubmit(event){
     event.preventDefault();
     const input = form.querySelector("input");
-    socket.emit("enter_room", input.value, backendDone);
+    socket.emit("enter_room", input.value, showRoom);
+    roomName = input.value;
     input.value = "";
     //socket.emit()에서 첫 번째 매개변수는 이벤트명이다
     //원하는 만큼 매개변수를 보내도 되지만 보내는 function은 반드시 마지막 매개변수여야 한다
@@ -20,6 +36,16 @@ function handleRoomSubmit(event){
 }
 
 form.addEventListener("submit", handleRoomSubmit);
+
+
+socket.on("welcome", () => {
+    addMessage("누가 새로 오셨는지 보세요!");
+});
+
+socket.on("bye", () => {
+    addMessage("누군가 나가셨네요. 안녕히가세요!");
+})
+//! 3:45
 
 //websocket과 차별되는 socket.io의 장점 
 //1. 모든 것이 message일 필요가 없다. client는 어떤 event이든 emit(send아님!)이 가능하다
