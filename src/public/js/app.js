@@ -15,11 +15,23 @@ function addMessage(message) {
     ul.appendChild(li);
 }
 
+function handleMessageSubmit(event) {
+    event.preventDefault();
+    const input = room.querySelector("input");
+    const value = input.value;
+    socket.emit("new_message", input.value, roomName, () => {
+        addMessage(`You: ${value}`);
+    });
+    input.value = "";
+}
+
 function showRoom() {
     welcome.hidden = true;
     room.hidden = false;
     const h3 = room.querySelector("h3");
     h3.innerText = `Room ${roomName}`;
+    const form = room.querySelector("form");
+    form.addEventListener("submit", handleMessageSubmit);
 }
 
 function handleRoomSubmit(event){
@@ -38,14 +50,11 @@ function handleRoomSubmit(event){
 form.addEventListener("submit", handleRoomSubmit);
 
 
-socket.on("welcome", () => {
-    addMessage("누가 새로 오셨는지 보세요!");
-});
+socket.on("welcome", () => addMessage("누가 새로 오셨는지 보세요!"));
 
-socket.on("bye", () => {
-    addMessage("누군가 나가셨네요. 안녕히가세요!");
-})
-//! 3:45
+socket.on("bye", () => addMessage("누군가 나가셨네요. 안녕히가세요!"));
+
+socket.on("new_message", addMessage);
 
 //websocket과 차별되는 socket.io의 장점 
 //1. 모든 것이 message일 필요가 없다. client는 어떤 event이든 emit(send아님!)이 가능하다
