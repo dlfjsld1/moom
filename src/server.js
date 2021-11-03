@@ -16,6 +16,9 @@ const httpServer = http.createServer(app);//http서버임
 const wsServer = SocketIO(httpServer); //socket.io 서버를 http 서버 위에 올린다
 
 wsServer.on("connection", socket => {
+    //wsServer.socketsJoin("announcement");
+    //접속한 모든 사람을 announcement 방에 넣음(이걸 쓰면 모든방의 disconnecting이 다 떠서 주석처리함)
+    socket["nickname"] = "익명";
     socket.onAny((event) => {//모든 이벤트에 console.log를 사용할 수 있다
         console.log(`Socket Event: ${event}`);
     });
@@ -24,18 +27,22 @@ wsServer.on("connection", socket => {
         //왜냐면 socket.IO에서 모든 socket은 user와 server 사이에 private room이 있기 때문
         socket.join(roomName);
         done();
-        socket.to(roomName).emit("welcome");
+        socket.to(roomName).emit("welcome", socket.nickname);
         //socket.to("방이름").emit("message")는 자신을 제외한 다른 사람에게 메시지를 보낸다!
         //back-end에서 front-end에서 (반드시)마지막 argument로 받은 함수를 실행시키면 front-end에서 실행된다
         //front-end에서 실행될 done() 함수에 back-end에서 매개변수를 담아 front-end에서 실행하게 만들 수 있다!
     });
     socket.on("disconnecting", () => {
-        socket.rooms.forEach(room => socket.to(room).emit("bye"));
+        socket.rooms.forEach(room => socket.to(room).emit("bye", socket.nickname));
     })
     socket.on("new_message", (msg, room, done) => {
-        socket.to(room).emit("new_message", msg);
+        socket.to(room).emit("new_message", `${socket.nickname}: ${msg}`);
         done();
     })
+    socket.on("nickname", (nickname, done) => {
+        socket["nickname"] = nickname;
+        done();
+    });
 });
 
 

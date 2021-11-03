@@ -1,7 +1,8 @@
 const socket = io();//socket.io를 사용하면 port나 ws를 쓸 필요가 없다 io function은 스스로 socket.io를 실행하고 있는 서버를 찾는다
 
 const welcome = document.getElementById("welcome");
-const form = welcome.querySelector("form");
+const roomform = welcome.querySelector("#roomname");
+const nameForm = welcome.querySelector("#name");
 const room = document.getElementById("room");
 
 room.hidden = true;//해당 부분을 숨긴다
@@ -9,20 +10,37 @@ room.hidden = true;//해당 부분을 숨긴다
 let roomName = '';
 
 function addMessage(message) {
-    const ul = room.querySelector("ul");
+    const ul = room.querySelector("#room ul");
     const li = document.createElement("li");
     li.innerText = message;
     ul.appendChild(li);
 }
 
+function setNickname(nickName) {
+    const ul = welcome.querySelector("#setnickname ul");
+    const li = document.createElement("li");
+    li.innerText = nickName;
+    ul.appendChild(li);
+}
+
 function handleMessageSubmit(event) {
     event.preventDefault();
-    const input = room.querySelector("input");
+    const input = room.querySelector("#msg input");//querySelector는 그냥 쓰면 무조건 첫번째걸 가져온다. #msg 안에 있는 input을 찾는다
+    const name = welcome.querySelector("#name input").value;
     const value = input.value;
     socket.emit("new_message", input.value, roomName, () => {
-        addMessage(`You: ${value}`);
+        addMessage(`${name}(나): ${value}`);
     });
     input.value = "";
+}
+
+function handleNicknameSubmit(event) {
+    event.preventDefault();
+    nameForm.hidden = true;
+    const input = welcome.querySelector("#name input");
+    socket.emit("nickname", input.value, () => {
+        setNickname(`닉네임이 ${input.value}로 설정되었습니다.`);
+    });
 }
 
 function showRoom() {
@@ -30,13 +48,13 @@ function showRoom() {
     room.hidden = false;
     const h3 = room.querySelector("h3");
     h3.innerText = `Room ${roomName}`;
-    const form = room.querySelector("form");
-    form.addEventListener("submit", handleMessageSubmit);
+    const msgForm = room.querySelector("#msg");
+    msgForm.addEventListener("submit", handleMessageSubmit);
 }
 
 function handleRoomSubmit(event){
     event.preventDefault();
-    const input = form.querySelector("input");
+    const input = roomform.querySelector("input");
     socket.emit("enter_room", input.value, showRoom);
     roomName = input.value;
     input.value = "";
@@ -47,12 +65,13 @@ function handleRoomSubmit(event){
     //websocket에선 argument(매개변수)로 object를 보내려면 JSON화를 해야 했지만 socket.io에선 그럴 필요가 없이 바로 object를 보낼 수 있다.
 }
 
-form.addEventListener("submit", handleRoomSubmit);
+roomform.addEventListener("submit", handleRoomSubmit);
+nameForm.addEventListener("submit", handleNicknameSubmit);
 
 
-socket.on("welcome", () => addMessage("누가 새로 오셨는지 보세요!"));
+socket.on("welcome", (user) => addMessage(`${user}님이 입장하셨습니다!`));
 
-socket.on("bye", () => addMessage("누군가 나가셨네요. 안녕히가세요!"));
+socket.on("bye", (left) => addMessage(`${left}님이 나가셨습니다. 안녕히 가세요!`));
 
 socket.on("new_message", addMessage);
 
